@@ -122,6 +122,8 @@ tr.cat td { font-family: var(--font-display); font-weight: 600; color: var(--mut
 .supplier { font-size: .8rem; color: var(--muted); white-space: nowrap; }
 .supplier.est { color: var(--est); }
 
+.welcome { border-color: var(--accent); }
+.steps { margin: 0; padding-left: 22px; display: grid; gap: 10px; max-width: 65ch; }
 .notes { margin: 0; padding: 10px 12px 10px 28px; background: var(--warn-bg); color: var(--warn-fg); border-radius: 6px; font-size: .9rem; }
 
 .totals { display: grid; gap: 6px; font-variant-numeric: tabular-nums; }

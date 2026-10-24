@@ -45,6 +45,8 @@
       custom: s.custom || [],          // user-added materials
       job: s.job || sampleJob(),
       saved: s.saved || [],
+      welcomed: !!s.welcomed,
+      feedback: s.feedback || {},
     };
   }
 
@@ -96,7 +98,8 @@
     if (view === 'quote') app.innerHTML = quoteView();
     else if (view === 'prices') app.innerHTML = pricesView();
     else if (view === 'saved') app.innerHTML = savedView();
-    else app.innerHTML = settingsView();
+    else if (view === 'settings') app.innerHTML = settingsView();
+    else app.innerHTML = helpView();
     if (view === 'quote') refreshResults();
   }
 
@@ -172,8 +175,16 @@
   function quoteView() {
     const j = state.job;
     const adds = Object.entries(CALCULATORS).map(([k, c]) => `<button class="btn" data-act="add-build" data-type="${k}">+ ${esc(c.name)}</button>`).join('');
+    const welcome = state.welcomed ? '' : `<section class="panel welcome no-print">
+          <div class="panel-head"><h3>Welcome to Site Quote</h3>
+            <button class="btn ghost sm" data-act="dismiss-welcome">Hide</button></div>
+          <p class="small" style="margin:0">This is a test version. The job below is an example. Change the measurements and watch the materials list and total update.
+          When you've had a play, open <strong>Help</strong> to send your feedback.</p>
+          <div class="btn-row"><button class="btn sm primary" data-act="go-help">How it works</button></div>
+        </section>`;
     return `<div class="layout">
       <div class="stack">
+        ${welcome}
         <div class="print-only">
           <h2>${esc(state.settings.business || 'Quote')}</h2>
           <p>${esc(state.settings.phone)}<br>Quote date: ${today()}</p>
@@ -355,6 +366,52 @@
     </section></div>`;
   }
 
+
+  const FEEDBACK_QS = [
+    ['jobs', 'What jobs do you quote most? Which ones are missing from the app?'],
+    ['wrong', 'Did any quantities look wrong? Which build, and what would you have ordered?'],
+    ['prices', 'Which yard do you buy from, and did any prices look way off?'],
+    ['easy', 'Was anything confusing or hard to use on site?'],
+    ['other', 'Anything else?'],
+  ];
+
+  function helpView() {
+    const fb = state.feedback;
+    return `<div class="stack">
+      <section class="panel">
+        <h2>How it works</h2>
+        <ol class="steps">
+          <li><strong>Start a job.</strong> On the Quote tab, fill in the client and site address. <em>New job</em> clears the example.</li>
+          <li><strong>Add builds.</strong> Tap a build (fence, deck, wall, paint, slab) and enter the measurements from site. You can add several builds to one job.</li>
+          <li><strong>Check the materials.</strong> Each build lists what to buy, with cut lengths and pack sizes. Tap <em>Add another material</em> for anything missing.</li>
+          <li><strong>Add labour.</strong> Enter labour hours on each build. Set your hourly rate, margin and GST in Settings.</li>
+          <li><strong>Send it.</strong> <em>Copy quote</em> gives you text to paste into a message or email. <em>Copy shopping list</em> gives a tick list for the yard.</li>
+          <li><strong>Fix the prices.</strong> Prices in amber are rough estimates. On the Prices tab, type in what you actually pay at each yard and the app uses those instead.</li>
+        </ol>
+        <p class="small muted" style="margin:0">Your jobs and prices are saved on this phone only. Measure in feet? Switch to feet in Settings.</p>
+      </section>
+      <section class="panel">
+        <h2>Send feedback</h2>
+        <p class="small muted" style="margin:0">Answer what you can, then tap <em>Copy feedback</em> and paste it into a text or email. It includes the job you're working on so we can see what you entered.</p>
+        <div class="fields">
+          ${FEEDBACK_QS.map(([k, q]) => `<div class="field wide"><label for="fb-${k}">${esc(q)}</label>
+            <textarea id="fb-${k}" data-fb="${k}">${esc(fb[k] || '')}</textarea></div>`).join('')}
+        </div>
+        <div class="btn-row"><button class="btn primary" data-act="copy-feedback">Copy feedback</button></div>
+      </section>
+    </div>`;
+  }
+
+  function feedbackText() {
+    const out = ['SITE QUOTE FEEDBACK', ''];
+    for (const [k, q] of FEEDBACK_QS) if ((state.feedback[k] || '').trim()) out.push(q, state.feedback[k].trim(), '');
+    const j = state.job;
+    out.push('--- Job I was testing ---');
+    for (const b of j.builds) out.push(`${CALCULATORS[b.type].name}: ${buildSummary(b)}, ${b.hours || 0} h`);
+    out.push('', quoteText());
+    return out.join('\n');
+  }
+
   // ---------- CSV ----------
   function toCsv() {
     const real = SUPPLIERS.filter((s) => s.id !== 'est').map((s) => s.id);
@@ -501,6 +558,9 @@
         state.custom.push({ id: 'c_' + uid(), name, category: $('#cm-cat').value.trim() || 'Other', unit: $('#cm-unit').value, prices: { est: price } });
         save(); render(); toast(`Added ${name}.`); break;
       }
+      case 'dismiss-welcome': state.welcomed = true; save(); render(); break;
+      case 'go-help': view = 'help'; render(); window.scrollTo(0, 0); break;
+      case 'copy-feedback': copy(feedbackText(), 'Feedback copied. Paste it into a text or email.'); break;
       case 'export-csv': copy(toCsv(), 'Price list copied as CSV - paste into a spreadsheet.'); break;
       case 'import-csv': importCsv($('#csv-text').value); break;
       case 'reset-prices':
@@ -538,6 +598,7 @@
       if (v == null || isNaN(v)) delete p[el.dataset.sup]; else p[el.dataset.sup] = v;
       save(); return;
     }
+    if (el.dataset.fb) { state.feedback[el.dataset.fb] = el.value; save(); return; }
     if (el.dataset.set) {
       const k = el.dataset.set;
       state.settings[k] = el.type === 'checkbox' ? el.checked : (el.type === 'number' ? parseFloat(el.value) || 0 : el.value);
