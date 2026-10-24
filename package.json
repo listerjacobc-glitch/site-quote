@@ -1,0 +1,10 @@
+{
+  "name": "site-quote",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Turn a site measure-up into a priced materials list and quote.",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "start": "npx --yes serve ."
+  }
+}
