@@ -632,5 +632,21 @@
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 
+  // Never leave a blank screen: show what went wrong and a way out.
+  function showCrash(err) {
+    const app = $('#app');
+    if (!app) return;
+    app.innerHTML = `<section class="panel"><h2>Something went wrong</h2>
+      <p>Site Quote hit an error and couldn't show this screen.</p>
+      <p class="small muted">${esc(err && err.message ? err.message : err)}</p>
+      <div class="btn-row"><button class="btn primary" id="crash-reload">Reload</button>
+        <button class="btn danger" id="crash-reset">Reset app data</button></div>
+      <p class="small muted">Reset clears saved jobs and prices on this phone. Try Reload first.</p></section>`;
+    $('#crash-reload').onclick = () => location.reload();
+    $('#crash-reset').onclick = () => { try { localStorage.removeItem(STORE_KEY); } catch (e) { /* blocked */ } location.reload(); };
+  }
+  const baseRender = render;
+  render = function () { try { baseRender(); } catch (e) { showCrash(e); } };
+
   render();
 })();
