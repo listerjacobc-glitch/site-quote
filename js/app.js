@@ -3,6 +3,7 @@
   const { SUPPLIERS, MATERIALS } = window.SQ_DATA;
   const { CALCULATORS } = window.SQ_CALC;
   const Q = window.SQ_QUOTE;
+  const CART = window.SQ_CART;
   const STORE_KEY = 'sitequote.v1';
   const FT = 0.3048;
 
@@ -207,6 +208,18 @@
       </div>
       <aside class="rail"><section class="panel" id="summary"></section></aside>
       <section class="panel shopping" id="shopping"></section>
+      <section class="panel shopping no-print" id="cart">
+        <h3>Fill a Mitre 10 cart with Claude</h3>
+        <ol class="steps small">
+          <li>Tap <strong>Copy cart instructions</strong>.</li>
+          <li>Paste them into Claude on a device where Claude can use your browser, with mitre10.co.nz open and signed in. Claude searches each item and adds it to your cart. It won't check out.</li>
+          <li>Claude replies with real Mitre 10 prices. Paste that reply below to update the prices in this app.</li>
+        </ol>
+        <div class="btn-row"><button class="btn primary" data-act="copy-cart">Copy cart instructions</button></div>
+        <div class="field"><label for="cart-reply">Paste Claude's reply</label>
+          <textarea id="cart-reply" placeholder="Paste the whole reply. The app finds the price list in it."></textarea></div>
+        <div class="btn-row"><button class="btn" data-act="import-cart">Update Mitre 10 prices</button></div>
+      </section>
     </div>`;
   }
 
@@ -247,6 +260,7 @@
     $('#shopping').innerHTML = `<h3>Shopping list</h3>
       <p class="small muted">All builds combined, grouped by where the price came from.</p>
       ${Object.entries(bySupplier).map(([sup, ls]) => `<div><div class="eyebrow">${esc(supplierName(sup))} · ${nzd(ls.reduce((a, l) => a + l.cost, 0))}</div>${linesTable(ls, true)}</div>`).join('') || '<p class="muted small">Add a build to see the list.</p>'}`;
+    $('#cart').hidden = !q.lines.length;
   }
 
   function quoteText() {
@@ -386,6 +400,7 @@
           <li><strong>Check the materials.</strong> Each build lists what to buy, with cut lengths and pack sizes. Tap <em>Add another material</em> for anything missing.</li>
           <li><strong>Add labour.</strong> Enter labour hours on each build. Set your hourly rate, margin and GST in Settings.</li>
           <li><strong>Send it.</strong> <em>Copy quote</em> gives you text to paste into a message or email. <em>Copy shopping list</em> gives a tick list for the yard.</li>
+          <li><strong>Fill a Mitre 10 cart.</strong> Under the shopping list, <em>Copy cart instructions</em> and paste them into Claude. Claude adds each item to your Mitre 10 cart in your browser and sends back the real prices.</li>
           <li><strong>Fix the prices.</strong> Prices in amber are rough estimates. On the Prices tab, type in what you actually pay at each yard and the app uses those instead.</li>
         </ol>
         <p class="small muted" style="margin:0">Your jobs and prices are saved on this phone only. Measure in feet? Switch to feet in Settings.</p>
@@ -437,8 +452,18 @@
     return rows.filter((r) => r.some((x) => x.trim()));
   }
 
+  // Accepts a bare CSV or a whole chat reply with the CSV in a code block.
+  function extractCsv(text) {
+    const lines = String(text || '').split(/\r?\n/);
+    const start = lines.findIndex((l) => /^\s*(id|name)\s*,/i.test(l));
+    if (start < 0) return text;
+    const rest = lines.slice(start);
+    const end = rest.findIndex((l, i) => i > 0 && (/^\s*```/.test(l) || !l.includes(',')));
+    return (end < 0 ? rest : rest.slice(0, end)).join('\n');
+  }
+
   function importCsv(text) {
-    const rows = parseCsv(text);
+    const rows = parseCsv(extractCsv(text));
     if (rows.length < 2) return toast('Nothing to import - the CSV needs a header row and at least one material.');
     const head = rows[0].map((h) => h.trim().toLowerCase());
     const col = (n) => head.indexOf(n);
@@ -534,6 +559,8 @@
       }
       case 'copy-quote': copy(quoteText(), 'Quote copied - paste it into a text or email.'); break;
       case 'copy-list': copy(shoppingText(), 'Shopping list copied.'); break;
+      case 'copy-cart': copy(CART.cartInstructions(computeQuote().lines, state.job), 'Cart instructions copied. Paste them into Claude.'); break;
+      case 'import-cart': importCsv($('#cart-reply').value); break;
       case 'print': window.print(); break;
       case 'open-job': {
         const j = state.saved.find((x) => x.id === btn.dataset.id);

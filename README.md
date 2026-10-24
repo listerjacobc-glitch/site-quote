@@ -41,6 +41,20 @@ pricing, and paste it back with *Import*.
 The big NZ merchants don't offer a public price API, and trade pricing is
 account-specific anyway, so prices you enter yourself are the reliable source.
 
+## Filling a Mitre 10 cart with Claude
+
+Under the shopping list, **Copy cart instructions** produces a self-contained
+request for Claude: the store (Mitre 10 MEGA Lower Hutt), rules (match size and
+treatment, don't check out, ask before signing in), and every item with its id,
+quantity and a search term. Cut lengths of the same timber are combined, and short
+cuts are bought as longer lengths.
+
+Paste it into Claude wherever Claude can drive your browser (for example Claude in
+Chrome) with mitre10.co.nz open. Claude searches each item, adds it to the cart and
+replies with what it added plus a `id,mitre10` CSV of real prices. Paste the whole
+reply into **Paste Claude's reply** and the app picks out the CSV and updates the
+Mitre 10 prices.
+
 ## Running it
 
 It's a static site with no build step and no server.
@@ -70,4 +84,5 @@ npm test   # calculator and pricing tests (Node 18+)
 - `js/materials.js` – material catalogue, suppliers and estimate prices
 - `js/calculators.js` – build calculators (dimensions → material lines)
 - `js/quote.js` – waste, pack sizes, supplier price choice, GST and totals
+- `js/cart.js` – the Mitre 10 cart instructions for Claude
 - `js/app.js` – the UI

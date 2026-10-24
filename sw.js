@@ -1,6 +1,6 @@
 // Offline cache so the app works on site with no signal.
-const CACHE = 'sitequote-v1';
-const FILES = ['./', 'index.html', 'css/styles.css', 'js/materials.js', 'js/calculators.js', 'js/quote.js', 'js/app.js', 'manifest.webmanifest', 'icons/icon.svg'];
+const CACHE = 'sitequote-v2';
+const FILES = ['./', 'index.html', 'css/styles.css', 'js/materials.js', 'js/calculators.js', 'js/quote.js', 'js/cart.js', 'js/app.js', 'manifest.webmanifest', 'icons/icon.svg'];
 
 self.addEventListener('install', (e) => e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES))));
 self.addEventListener('activate', (e) => e.waitUntil(
